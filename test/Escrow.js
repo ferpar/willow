@@ -44,8 +44,14 @@ describe("Escrow", () => {
       expect(sellerResult).to.be.equal(seller.address);
     });
 
-    it("returns inspector address", async () => {});
+    it("returns inspector address", async () => {
+      const inspectorResult = await escrow.inspector();
+      expect(inspectorResult).to.be.equal(inspector.address);
+    });
 
-    it("returns lender address", async () => {});
+    it("returns lender address", async () => {
+      const lenderResult = await escrow.lender();
+      expect(lenderResult).to.be.equal(lender.address);
+    });
   });
 });
