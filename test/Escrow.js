@@ -86,4 +86,37 @@ describe("Escrow", () => {
       expect(result).to.be.equal(tokens(5));
     });
   });
+
+  describe('Deposits', () => {
+    it('updates contract balance', async () => {
+      const transaction = await escrow.connect(buyer).depositEarnest(1, {value: tokens(5)});
+      await transaction.wait();
+      const result = await escrow.getBalance();
+      expect(result).to.be.equal(tokens(5));
+    })
+  })
+
+  describe('Inspection', () => {
+    it('updates inspection status', async () => {
+      const transaction = await escrow.connect(inspector).updateInspectionStatus(1, true);
+      await transaction.wait();
+      const result = await escrow.inspectionPassed(1)
+      expect(result).to.be.equal(true)
+    })
+  })
+
+  describe('Approval', () => {
+    it('updates approval status', async () => {
+      const buyerApproval = await escrow.connect(buyer).approveSale(1);
+      await buyerApproval.wait();
+      const sellerApproval = await escrow.connect(seller).approveSale(1);
+      await sellerApproval.wait();
+      const lenderApproval = await escrow.connect(lender).approveSale(1);
+      await lenderApproval.wait();
+
+      expect(await escrow.approval(1, buyer.address)).to.be.equal(true)
+      expect(await escrow.approval(1, seller.address)).to.be.equal(true)
+      expect(await escrow.approval(1, lender.address)).to.be.equal(true)
+    })
+  })
 });
