@@ -88,11 +88,35 @@ describe("Escrow", () => {
   });
 
   describe('Deposits', () => {
-    it('updates contract balance', async () => {
+    beforeEach(async () => {
       const transaction = await escrow.connect(buyer).depositEarnest(1, {value: tokens(5)});
       await transaction.wait();
+    })
+    it('updates contract balance', async () => {
       const result = await escrow.getBalance();
       expect(result).to.be.equal(tokens(5));
+    })
+    it('is returned when sale canceled', async () => {
+      // get initial balance of the buyer
+      const initialBalance = await buyer.getBalance();
+      const cancelTransaction = await escrow.connect(buyer).cancelSale(1);
+      await cancelTransaction.wait();
+      // get final balance of the buyer
+      const finalBalance = await buyer.getBalance();
+      expect(finalBalance).to.be.above(initialBalance);
+    })
+    it('transfer deposit to seller if canceled after inspection passed', async () => {
+      // get initial balance of the seller
+      const initialBalance = await seller.getBalance();
+      // update inspection status
+      const transaction = await escrow.connect(inspector).updateInspectionStatus(1, true);
+      await transaction.wait();
+      // cancel sale
+      const cancelTransaction = await escrow.connect(buyer).cancelSale(1);
+      await cancelTransaction.wait();
+      // get final balance of the seller
+      const finalBalance = await seller.getBalance();
+      expect(finalBalance).to.be.above(initialBalance);
     })
   })
 
@@ -105,7 +129,7 @@ describe("Escrow", () => {
     })
   })
 
-  describe('Approval', () => {
+  describe('Approval', async () => {
     it('updates approval status', async () => {
       const buyerApproval = await escrow.connect(buyer).approveSale(1);
       await buyerApproval.wait();
@@ -119,4 +143,32 @@ describe("Escrow", () => {
       expect(await escrow.approval(1, lender.address)).to.be.equal(true)
     })
   })
-});
+  
+  describe('Sale', async () => {
+    beforeEach(async () => {
+      let transaction = await escrow.connect(buyer).depositEarnest(1, {value: tokens(5)})
+      await transaction.wait();
+      transaction = await escrow.connect(inspector).updateInspectionStatus(1, true);
+      await transaction.wait();
+      transaction = await escrow.connect(buyer).approveSale(1);
+      await transaction.wait();
+      transaction = await escrow.connect(seller).approveSale(1);
+      await transaction.wait();
+      await lender.sendTransaction({to: escrow.address, value: tokens(5)})
+      transaction = await escrow.connect(lender).approveSale(1);
+      await transaction.wait();
+      transaction = await escrow.connect(seller).finalizeSale(1);
+      await transaction.wait();
+    }) 
+    
+    it('Updates ownership', async () => {
+      expect(await realEstate.ownerOf(1)).to.be.equal(buyer.address)
+    })
+
+    it('Updates balance', async() => {
+      expect(await escrow.getBalance()).to.be.equal(tokens(0))
+    })
+
+  })
+
+})
