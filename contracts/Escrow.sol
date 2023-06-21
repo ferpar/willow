@@ -79,10 +79,6 @@ contract Escrow {
 
     }
 
-    function getBalance() public view returns (uint256) {
-        return address(this).balance;
-    }
-
     // Finalize Sale
     // -> Requite inspection status (add more items here, like appraisal)
     // -> Require Sale to be authorized
@@ -115,4 +111,7 @@ contract Escrow {
 
     }
 
+    function getBalance() public view returns (uint256) {
+        return address(this).balance;
+    }
 }
