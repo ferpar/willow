@@ -1,9 +1,61 @@
 import { ethers } from "ethers";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 import close from "../assets/close.svg";
 
-const Home = ({ home, provider, escrow, toggleProp }) => {
+const Home = ({ home, provider, account, escrow, toggleProp }) => {
+  const [hasBought, setHasBought] = useState(false);
+  const [hasLended, setHasLended] = useState(false);
+  const [hasInspected, setHasInspected] = useState(false);
+  const [hasSold, setHasSold] = useState(false);
+
+  const [buyer, setBuyer] = useState(null);
+  const [seller, setSeller] = useState(null);
+  const [inspector, setInspector] = useState(null);
+  const [lender, setLender] = useState(null);
+
+  const [owner, setOwner] = useState(null);
+
+  const fetchDetails = useCallback(async () => {
+    // -- Buyer
+    const currentBuyer = await escrow.buyer(home.id);
+    setBuyer(currentBuyer);
+
+    const hasBoughtQuery = await escrow.approval(home.id, currentBuyer);
+    setHasBought(hasBoughtQuery);
+
+    // -- Seller
+    const currentSeller = await escrow.seller();
+    setSeller(currentSeller);
+
+    const hasSoldQuery = await escrow.approval(home.id, currentSeller);
+    setHasSold(hasSoldQuery);
+
+    // -- Inspector
+    const currentInspector = await escrow.inspector();
+    setInspector(currentInspector);
+
+    const hasInspectedQuery = await escrow.inspectionPassed(home.id);
+    setHasInspected(hasInspectedQuery);
+
+    // -- Lender
+    const currentLender = await escrow.lender();
+    setLender(currentLender);
+
+    const hasLendedQuery = await escrow.approval(home.id, currentLender);
+    setHasLended(hasLendedQuery);
+  }, [escrow, home.id]);
+
+  const fetchOwner = useCallback(async () => {
+    if (await escrow.isListed(home.id)) return;
+    const owner = await escrow.buyer(home.id);
+    setOwner(owner);
+  }, [escrow, home.id]);
+
+  useEffect(() => {
+    fetchDetails();
+    fetchOwner();
+  }, [fetchDetails, fetchOwner, hasSold]);
   return (
     <div className="home">
       <div className="home__details">
@@ -21,11 +73,28 @@ const Home = ({ home, provider, escrow, toggleProp }) => {
           <p>{home.address}</p>
           <h2>{home.attributes[0].value} ETH</h2>
 
-          <div>
-            <button className="home__buy">Buy</button>
-          </div>
+          {owner ? (
+            <div className="home_owned">
+              Owned by{" "}
+              {owner.slice(0, 6) +
+                "..." +
+                owner.slice(owner.length - 4, owner.length)}
+            </div>
+          ) : (
+            <div>
+              {account === inspector ? (
+                <button className="home__buy">Approve Inspection</button>
+              ) : account === lender ? (
+                <button className="home__buy">Approve & Lend</button>
+              ) : account === seller ? (
+                <button className="home__buy">Approve & Sell</button>
+              ) : (
+                <button className="home__buy">Buy</button>
+              )}
+              <button className="home__contact">Contact Agent</button>
+            </div>
+          )}
 
-          <button className="home__contact">Contact Agent</button>
           <hr />
 
           <h2>Overview</h2>

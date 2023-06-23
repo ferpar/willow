@@ -42,7 +42,6 @@ function App() {
     }
 
     setHomes(newHomes);
-    console.log(newHomes);
 
     const newEscrow = new ethers.Contract(
       config[network.chainId].escrow.address,
@@ -63,7 +62,6 @@ function App() {
   };
 
   const toggleProperty = async (selectedHome) => {
-    console.log(selectedHome)
     setHighlightedHome(selectedHome)
     isPopOpen ? setIsPopOpen(false) : setIsPopOpen(true);
   }
@@ -106,7 +104,7 @@ function App() {
           })}
         </div>
       </div>
-      {isPopOpen && <Home home={highlightedHome} provider={provider} escrow={escrow} toggleProp={toggleProperty}/>}
+      {isPopOpen && <Home home={highlightedHome} provider={provider} account={account} escrow={escrow} toggleProp={toggleProperty}/>}
     </div>
   );
 }
