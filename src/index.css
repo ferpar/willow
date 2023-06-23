@@ -243,6 +243,7 @@ header {
   z-index: 2;
 
   background: var(--clr-white);
+  overflow-y: auto;
 }
 
 .home__image {

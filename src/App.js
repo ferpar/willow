@@ -18,6 +18,8 @@ function App() {
   const [provider, setProvider] = useState(null);
   const [escrow, setEscrow] = useState(null);
   const [homes, setHomes] = useState([]);
+  const [highlightedHome, setHighlightedHome] = useState(null);
+  const [isPopOpen, setIsPopOpen] = useState(false);
 
   const loadBlockchainData = async () => {
     const newProvider = new ethers.providers.Web3Provider(window.ethereum);
@@ -60,6 +62,13 @@ function App() {
     });
   };
 
+  const toggleProperty = async (selectedHome) => {
+    console.log(selectedHome)
+    setHighlightedHome(selectedHome)
+    isPopOpen ? setIsPopOpen(false) : setIsPopOpen(true);
+  }
+
+
   useEffect(() => {
     loadBlockchainData();
     setAccountChangeListener();
@@ -75,7 +84,11 @@ function App() {
         <div className="cards">
           {homes.map((home, index) => {
             return (
-            <div key={home?.id} className="card">
+            <div 
+              key={home?.id} 
+              className="card"
+              onClick={() => toggleProperty(home)}
+            >
               <div className="card__image">
                 <img src={home?.image} alt="Home" />
               </div>
@@ -93,6 +106,7 @@ function App() {
           })}
         </div>
       </div>
+      {isPopOpen && <Home home={highlightedHome} provider={provider} escrow={escrow} toggleProp={toggleProperty}/>}
     </div>
   );
 }
