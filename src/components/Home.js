@@ -52,6 +52,63 @@ const Home = ({ home, provider, account, escrow, toggleProp }) => {
     setOwner(owner);
   }, [escrow, home.id]);
 
+  const buyHandler = async () => {
+    const escrowAmount = await escrow.escrowAmount(home.id);
+    const signer = await provider.getSigner();
+
+    // Buyer deposit earnest
+    const depositTransaction = await escrow
+      .connect(signer)
+      .depositEarnest(home.id, { value: escrowAmount });
+    await depositTransaction.wait();
+
+    // Buyer approves ...
+    const approvalTransaction = await escrow
+      .connect(signer)
+      .approveSale(home.id);
+    await approvalTransaction.wait();
+
+    setHasBought(true);
+  };
+  const inspectHandler = async () => {
+    const signer = await provider.getSigner();
+
+    // Inspector updates status
+    const statusUpdateTX = await escrow
+      .connect(signer)
+      .updateInspectionStatus(home.id, true);
+    await statusUpdateTX.wait();
+
+    setHasInspected(true);
+  };
+  const lendHandler = async () => {
+    const signer = await provider.getSigner();
+
+    // Lender approves ...
+    const approvalTransaction = await escrow.connect(signer).approveSale(home.id);
+    await approvalTransaction.wait();
+
+    // Lender sends funds to contract ...
+
+    const lendAmount = (await escrow.purchasePrice(home.id) - await escrow.escrowAmount(home.id));
+    await signer.sendTransaction({ to: escrow.address, value: lendAmount.toString(), gasLimit: 60000})
+
+    setHasLended(true);
+  };
+  const sellHandler = async () => {
+    const signer = await provider.getSigner();
+
+    // Seller approves ...
+    const approvalTransaction = await escrow.connect(signer).approveSale(home.id);
+    await approvalTransaction.wait();
+    
+    // Seller finalizes sale ...
+    const finalizationTransaction = await escrow.connect(signer).finalizeSale(home.id);
+    await finalizationTransaction.wait();
+
+    setHasSold(true);
+  };
+
   useEffect(() => {
     fetchDetails();
     fetchOwner();
@@ -74,7 +131,7 @@ const Home = ({ home, provider, account, escrow, toggleProp }) => {
           <h2>{home.attributes[0].value} ETH</h2>
 
           {owner ? (
-            <div className="home_owned">
+            <div className="home__owned">
               Owned by{" "}
               {owner.slice(0, 6) +
                 "..." +
@@ -83,13 +140,37 @@ const Home = ({ home, provider, account, escrow, toggleProp }) => {
           ) : (
             <div>
               {account === inspector ? (
-                <button className="home__buy">Approve Inspection</button>
+                <button
+                  className="home__buy"
+                  onClick={inspectHandler}
+                  disabled={hasInspected}
+                >
+                  Approve Inspection
+                </button>
               ) : account === lender ? (
-                <button className="home__buy">Approve & Lend</button>
+                <button
+                  className="home__buy"
+                  onClick={lendHandler}
+                  disabled={hasLended}
+                >
+                  Approve & Lend
+                </button>
               ) : account === seller ? (
-                <button className="home__buy">Approve & Sell</button>
+                <button
+                  className="home__buy"
+                  onClick={sellHandler}
+                  disabled={hasSold}
+                >
+                  Approve & Sell
+                </button>
               ) : (
-                <button className="home__buy">Buy</button>
+                <button
+                  className="home__buy"
+                  onClick={buyHandler}
+                  disabled={hasBought}
+                >
+                  Buy
+                </button>
               )}
               <button className="home__contact">Contact Agent</button>
             </div>
